@@ -47,7 +47,7 @@ def main():
         print(f"ERROR: could not connect.\n{e}")
         return 1
     print(f"Connected to '{db}' on {host}:{port}")
-
+    
     try:
         tables, fks, indexed = scan_schema(conn, args.schema)
     except Exception as e:

@@ -86,13 +86,35 @@ LINK HERE
 
 ```text
 dbindex-analyzer/
-├── index_analyzer.py     # command line entry point
+├── index_analyzer.py     # command line entry point (orchestrates the workflow)
 ├── analyzer/
-│   ├── db.py             # database connection
-│   ├── schema.py         # reads tables, columns, keys, indexes
-│   ├── rules.py          # index rules and SQL generation
-│   └── report.py         # SQL file and HTML report
-├── tests/test_rules.py   # unit tests
-├── sample/sample_db.sql  # sample database
-└── requirements.txt
+│   ├── __init__.py       # marks analyzer as a Python package
+│   ├── db.py             # manages PostgreSQL connection with timeout and error handling
+│   ├── schema.py         # queries PostgreSQL catalogs for tables, columns, keys, and indexes
+│   ├── rules.py          # index recommendation heuristics and safe SQL generator
+│   └── report.py         # writes recommendations to SQL file and interactive HTML report
+├── tests/
+│   └── test_rules.py     # automated unit tests for recommendation rules
+├── sample/
+│   └── sample_db.sql     # sample e-commerce schema with synthetic bulk seed data
+├── Dockerfile            # container configuration for running in isolated Docker environment
+├── .dockerignore         # prevents unneeded files from being copied into Docker images
+└── requirements.txt      # external dependencies (psycopg2-binary, pytest)
 ```
+
+### How the Files Work Together
+
+```
+[ User via Terminal / Docker ]
+             │
+             ▼
+    index_analyzer.py (CLI entrypoint, argument parsing, fallback prompting)
+             │
+             ├─► 1. analyzer/db.py (connects to PostgreSQL via psycopg2)
+             │
+             ├─► 2. analyzer/schema.py (queries information_schema & pg_catalog)
+             │
+             ├─► 3. analyzer/rules.py (evaluates heuristics, builds CREATE INDEX SQL)
+             │
+             └─► 4. analyzer/report.py (writes recommendations.sql & report.html)
+```

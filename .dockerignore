@@ -1,6 +1,25 @@
+# ==============================================================================
+# .dockerignore
+# ==============================================================================
+# Tells Docker which files and directories to ignore when building the image.
+# Excluding unneeded files keeps build times fast and Docker images lean and secure.
+# ==============================================================================
+
+# Virtual environment on the host machine:
+# Container installs its own clean dependencies in Linux; host venv is not needed.
 venv/
+
+# Python bytecode caches:
+# Python automatically compiles .py files into bytecode (.pyc) stored in __pycache__.
+# These should be freshly generated inside the container runtime, not copied from host.
 __pycache__/
 *.pyc
+
+# Git version control metadata:
+# The .git directory contains commit history, which is unnecessary for running the app.
 .git/
+
+# Output reports from local runs:
+# Avoid baking existing run artifacts into the Docker image.
 report.html
-recommendations.sql
+recommendations.sql

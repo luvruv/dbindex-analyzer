@@ -1,2 +1,19 @@
+# ==============================================================================
+# DbIndex Analyzer - Python Package Dependencies
+# ==============================================================================
+# This file lists the external Python packages required to run and test DbIndex Analyzer.
+# Install all dependencies with: pip install -r requirements.txt
+# ==============================================================================
+
+# psycopg2-binary:
+# The PostgreSQL database driver/adapter for Python.
+# It enables Python scripts to connect to PostgreSQL, run SQL queries, and inspect schemas.
+# The "-binary" distribution includes pre-compiled C libraries, so you do not need
+# local C compilers or PostgreSQL development header files installed on your machine.
 psycopg2-binary
-pytest
+
+# pytest:
+# A popular, user-friendly testing framework for Python.
+# It automatically discovers and executes tests (like those in the `tests/` directory),
+# providing clear failure reports and test summaries.
+pytest

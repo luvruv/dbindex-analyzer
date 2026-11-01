@@ -65,14 +65,14 @@ NAME_RULES = [
 
     # 4. Unique or lookup keys (e.g. username, slug, sku, product code)
     ("lookup_key", r"^(username|user_name|login|slug|code|sku)$",
-     "Lookup keys are searched by exact value", "20-50x"),
+    "Lookup keys are searched by exact value", "20-50x"),
 
     # 5. Join keys: columns ending in '_id' (common foreign key naming convention)
     ("join_key", r"_id$", "Columns ending in _id are usually used in JOINs", "10-50x"),
 
     # 6. Status and category flags: commonly used in WHERE filters (e.g., WHERE status = 'active')
     ("status", r"^(status|state|type|category)$",
-     "Status/type columns are often filtered in WHERE clauses", "5-20x"),
+    "Status/type columns are often filtered in WHERE clauses", "5-20x"),
 ]
 
 

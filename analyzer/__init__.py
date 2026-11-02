@@ -1,35 +1,45 @@
 """
 analyzer
 ========
-Core analysis package for DbIndex Analyzer.
+Core database schema and index intelligence package for DbIndex Analyzer.
 
-In Python, an `__init__.py` file indicates that this directory should be treated
-as a Python package. This enables other modules (such as `index_analyzer.py` and
-`tests/test_rules.py`) to import functionality from this folder using syntax like:
-    from analyzer.db import connect
-    from analyzer.schema import scan_schema
-    from analyzer.rules import recommend
-    from analyzer.report import write_sql_file, write_html_report
-
-How the modules in this package work together:
----------------------------------------------
+Provides end-to-end database auditing:
 1. `db.py`:
-   Handles opening a connection to the PostgreSQL database using psycopg2,
-   with proper timeouts and friendly error handling.
+   Multi-engine connection manager supporting PostgreSQL (via psycopg2) and SQLite (via standard library).
 
 2. `schema.py`:
-   Runs SQL queries against PostgreSQL system catalogs (`information_schema`
-   and `pg_catalog`) to extract information about all tables, columns, foreign
-   key constraints, and already-existing indexes.
+   Deep catalog introspection extracting tables, columns, data types, primary keys, foreign keys,
+   and detailed index metadata across PostgreSQL and SQLite.
 
 3. `rules.py`:
-   Inspects the extracted schema details against heuristic indexing rules
-   (e.g., foreign keys, email columns, phone numbers, timestamps, status flags).
-   Identifies unindexed columns that will benefit from an index and builds the
-   corresponding `CREATE INDEX IF NOT EXISTS` SQL statements.
+   Dual index recommendation engine:
+   - Detects missing indexes on unindexed columns (Foreign Keys, lookup keys, timestamps, search filters).
+   - Detects redundant, duplicate, and prefix-subsumed indexes that waste storage and write latency.
+   - Categorizes existing healthy indexes (Primary Keys, Unique Constraints, Composite Indexes).
+   - Computes comprehensive Schema Health Score (0-100) and letter grades.
 
-4. `report.py`:
-   Takes the recommendations produced by `rules.py` and outputs them in two formats:
-   - A clean `.sql` script ready to run directly against PostgreSQL (`recommendations.sql`).
-   - A modern, styled `.html` visual report with summary cards and one-click copy (`report.html`).
+4. `generator.py`:
+   Generates realistic sample databases and schemas on-demand for immediate testing and academic presentations.
+
+5. `report.py`:
+   Builds the executive HTML dashboard and production SQL migration rollout and cleanup scripts.
 """
+
+from analyzer.db import connect, connect_postgres, connect_sqlite
+from analyzer.schema import scan_schema
+from analyzer.rules import recommend, analyze_schema_comprehensive, detect_redundant_indexes
+from analyzer.report import write_sql_file, write_html_report
+from analyzer.generator import generate_demo_database
+
+__all__ = [
+    "connect",
+    "connect_postgres",
+    "connect_sqlite",
+    "scan_schema",
+    "recommend",
+    "analyze_schema_comprehensive",
+    "detect_redundant_indexes",
+    "write_sql_file",
+    "write_html_report",
+    "generate_demo_database",
+]

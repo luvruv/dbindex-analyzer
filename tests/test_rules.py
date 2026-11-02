@@ -104,3 +104,93 @@ def test_at_least_five_rule_types():
     """
     rules = {s.rule for s in recommend(TABLES, FKS, set())}
     assert len(rules) >= 5
+
+
+# ------------------------------------------------------------------------------
+# Advanced Unit Tests: Redundant Indexes, Health Scoring, and SQLite Engine
+# ------------------------------------------------------------------------------
+from analyzer.schema import IndexInfo
+from analyzer.rules import (
+    detect_redundant_indexes,
+    classify_healthy_indexes,
+    compute_health_score,
+    analyze_schema_comprehensive,
+)
+from analyzer.generator import generate_demo_database
+from analyzer.db import connect_sqlite
+from analyzer.schema import scan_sqlite_schema
+
+
+def test_detects_duplicate_indexes():
+    """Verify detection of exact duplicate indexes on identical columns."""
+    indexes = [
+        IndexInfo(name="idx_orders_user_1", table="orders", columns=["user_id"]),
+        IndexInfo(name="idx_orders_user_2", table="orders", columns=["user_id"]),
+    ]
+    redundant = detect_redundant_indexes(indexes)
+    assert len(redundant) == 1
+    assert redundant[0].issue_type == "DUPLICATE"
+    assert redundant[0].index_name == "idx_orders_user_2"
+    assert "DROP INDEX" in redundant[0].sql
+
+
+def test_detects_redundant_prefix_indexes():
+    """Verify that a single-column index is flagged redundant when a composite index already covers it."""
+    indexes = [
+        IndexInfo(name="idx_orders_composite", table="orders", columns=["user_id", "order_date"]),
+        IndexInfo(name="idx_orders_user_single", table="orders", columns=["user_id"]),
+    ]
+    redundant = detect_redundant_indexes(indexes)
+    assert len(redundant) == 1
+    assert redundant[0].issue_type == "REDUNDANT_PREFIX"
+    assert redundant[0].index_name == "idx_orders_user_single"
+
+
+def test_detects_redundant_index_on_primary_key():
+    """Verify that manual indexes created on primary keys are flagged as redundant."""
+    indexes = [
+        IndexInfo(name="users_pkey", table="users", columns=["id"], is_primary=True, is_unique=True),
+        IndexInfo(name="idx_users_id_manual", table="users", columns=["id"], is_primary=False),
+    ]
+    redundant = detect_redundant_indexes(indexes)
+    assert len(redundant) == 1
+    assert redundant[0].issue_type == "REDUNDANT_PK"
+    assert redundant[0].index_name == "idx_users_id_manual"
+
+
+def test_schema_health_score_calculation():
+    """Verify schema health scoring and deduction logic."""
+    metrics = compute_health_score(
+        tables=TABLES,
+        foreign_keys=FKS,
+        indexed=set(),
+        missing=recommend(TABLES, FKS, set()),
+        redundant=[],
+    )
+    assert 0 <= metrics.health_score <= 100
+    assert metrics.health_grade in ["A", "B", "C", "D", "F"]
+    assert len(metrics.insights) > 0
+
+
+def test_demo_database_generation_and_sqlite_scan(tmp_path):
+    """Verify that the schema generator creates a valid SQLite DB and scan_sqlite_schema analyzes it."""
+    db_file = str(tmp_path / "test_demo.db")
+    created_path = generate_demo_database(db_file)
+    assert created_path == db_file
+
+    conn = connect_sqlite(created_path)
+    try:
+        scan_res = scan_sqlite_schema(conn.raw_conn, "test_demo")
+        tables, fks, indexed = scan_res
+        metadata = getattr(scan_res, "metadata", None)
+        assert len(tables) >= 5
+        assert ("users", "email") in [c for cols in tables.values() for c in cols] or any("email" == c[0] for c in tables.get("users", []))
+
+        # Comprehensive analysis should find both missing and redundant indexes
+        analysis = analyze_schema_comprehensive(
+            tables, fks, indexed, metadata=metadata, engine_type="sqlite", db_name="test_demo"
+        )
+        assert len(analysis.missing_indexes) > 0
+        assert len(analysis.redundant_indexes) > 0
+    finally:
+        conn.close()
